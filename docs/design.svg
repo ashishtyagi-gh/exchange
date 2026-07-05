@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 580" width="860" height="580">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0a1120"/>
+    </linearGradient>
+    <linearGradient id="hdr2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#0e1f38"/>
+    </linearGradient>
+    <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#c8dcf0"/>
+    </marker>
+    <marker id="arrC" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#06b6d4"/>
+    </marker>
+    <marker id="arrR" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#ef4444"/>
+    </marker>
+    <marker id="arrG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#10b981"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="860" height="580" fill="url(#bg2)" rx="14"/>
+  <rect x="1" y="1" width="858" height="578" fill="none" stroke="#1e3a5f" stroke-width="1.5" rx="13"/>
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="860" height="52" fill="url(#hdr2)" rx="13"/>
+  <rect x="0" y="38" width="860" height="14" fill="#0e1f38"/>
+  <text x="430" y="34" text-anchor="middle" font-family="'SF Mono','Cascadia Code','Consolas',monospace" font-size="18" font-weight="bold" fill="#e2e8f0" letter-spacing="1">Exchange Matching Engine — Internal Design</text>
+  <circle cx="24" cy="26" r="7" fill="#ff5f57"/>
+  <circle cx="44" cy="26" r="7" fill="#febc2e"/>
+  <circle cx="64" cy="26" r="7" fill="#28c840"/>
+
+  <!-- ========== LEFT SIDE: ORDER BOOK INTERNALS ========== -->
+  <text x="225" y="80" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#f59e0b">ORDER BOOK INTERNALS</text>
+
+  <!-- BID SIDE -->
+  <rect x="30" y="92" width="185" height="200" rx="8" fill="#0a1e30" stroke="#ef4444" stroke-width="1.5"/>
+  <rect x="30" y="92" width="185" height="24" rx="8" fill="#ef4444" opacity="0.2"/>
+  <text x="122" y="109" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#ef4444">BIDS (descending)</text>
+
+  <!-- bid levels -->
+  <rect x="42"  y="123" width="161" height="22" rx="4" fill="#10233a" stroke="#ef4444" stroke-width="0.8"/>
+  <text x="80"  y="138" font-family="monospace" font-size="9" fill="#ef4444">100,001</text>
+  <text x="160" y="138" font-family="monospace" font-size="9" fill="#c8dcf0">3 orders [id1,id2,id3]</text>
+  <text x="55"  y="137" font-family="monospace" font-size="8" fill="#10b981">BEST</text>
+
+  <rect x="42"  y="150" width="161" height="22" rx="4" fill="#0d1e30" stroke="#475569" stroke-width="0.8"/>
+  <text x="80"  y="165" font-family="monospace" font-size="9" fill="#dde8f8">100,000</text>
+  <text x="160" y="165" font-family="monospace" font-size="9" fill="#c8dcf0">5 orders</text>
+
+  <rect x="42"  y="177" width="161" height="22" rx="4" fill="#0d1e30" stroke="#475569" stroke-width="0.8"/>
+  <text x="80"  y="192" font-family="monospace" font-size="9" fill="#dde8f8">99,995</text>
+  <text x="160" y="192" font-family="monospace" font-size="9" fill="#c8dcf0">2 orders</text>
+
+  <rect x="42"  y="204" width="161" height="22" rx="4" fill="#0d1e30" stroke="#1e3a5f" stroke-width="0.8"/>
+  <text x="122" y="219" text-anchor="middle" font-family="monospace" font-size="9" fill="#b0cce6">... (N levels, unbounded)</text>
+
+  <text x="122" y="252" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">std::pmr::map&lt;Price, PriceLevel,</text>
+  <text x="122" y="263" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">std::greater&lt;Price&gt;&gt;</text>
+  <text x="122" y="278" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">O(log N) find/insert/erase</text>
+
+  <!-- ASK SIDE -->
+  <rect x="235" y="92" width="185" height="200" rx="8" fill="#0a1e30" stroke="#22d3ee" stroke-width="1.5"/>
+  <rect x="235" y="92" width="185" height="24" rx="8" fill="#22d3ee" opacity="0.2"/>
+  <text x="327" y="109" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#22d3ee">ASKS (ascending)</text>
+
+  <!-- ask levels -->
+  <rect x="247" y="123" width="161" height="22" rx="4" fill="#10233a" stroke="#22d3ee" stroke-width="0.8"/>
+  <text x="285" y="138" font-family="monospace" font-size="9" fill="#22d3ee">100,003</text>
+  <text x="365" y="138" font-family="monospace" font-size="9" fill="#c8dcf0">2 orders [id7,id8]</text>
+  <text x="252" y="137" font-family="monospace" font-size="8" fill="#10b981">BEST</text>
+
+  <rect x="247" y="150" width="161" height="22" rx="4" fill="#0d1e30" stroke="#475569" stroke-width="0.8"/>
+  <text x="285" y="165" font-family="monospace" font-size="9" fill="#dde8f8">100,008</text>
+  <text x="365" y="165" font-family="monospace" font-size="9" fill="#c8dcf0">4 orders</text>
+
+  <rect x="247" y="177" width="161" height="22" rx="4" fill="#0d1e30" stroke="#475569" stroke-width="0.8"/>
+  <text x="285" y="192" font-family="monospace" font-size="9" fill="#dde8f8">100,014</text>
+  <text x="365" y="192" font-family="monospace" font-size="9" fill="#c8dcf0">7 orders</text>
+
+  <rect x="247" y="204" width="161" height="22" rx="4" fill="#0d1e30" stroke="#1e3a5f" stroke-width="0.8"/>
+  <text x="327" y="219" text-anchor="middle" font-family="monospace" font-size="9" fill="#b0cce6">... (N levels, unbounded)</text>
+
+  <text x="327" y="252" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">std::pmr::map&lt;Price, PriceLevel&gt;</text>
+  <text x="327" y="278" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">O(log N) find/insert/erase</text>
+
+  <!-- PRICE LEVEL DETAIL -->
+  <rect x="30" y="310" width="390" height="100" rx="8" fill="#0a1628" stroke="#8b5cf6" stroke-width="1.5"/>
+  <rect x="30" y="310" width="390" height="22" rx="8" fill="#8b5cf6" opacity="0.15"/>
+  <text x="225" y="326" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#8b5cf6">PriceLevel struct</text>
+
+  <rect x="45"  y="336" width="175" height="32" rx="5" fill="#0d2137" stroke="#a78bfa" stroke-width="1"/>
+  <text x="132" y="349" text-anchor="middle" font-family="monospace" font-size="9" fill="#a78bfa">pmr::deque&lt;OrderId&gt;</text>
+  <text x="132" y="362" text-anchor="middle" font-family="monospace" font-size="8" fill="#c8dcf0">FIFO queue, lazy-delete</text>
+
+  <text x="228" y="355" text-anchor="middle" font-family="monospace" font-size="13" fill="#b0cce6">+</text>
+
+  <rect x="238" y="336" width="172" height="32" rx="5" fill="#0d2137" stroke="#a78bfa" stroke-width="1"/>
+  <text x="324" y="349" text-anchor="middle" font-family="monospace" font-size="9" fill="#a78bfa">Quantity total_size</text>
+  <text x="324" y="362" text-anchor="middle" font-family="monospace" font-size="8" fill="#c8dcf0">live orders sum only</text>
+
+  <text x="225" y="397" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">canceled orders: status=Canceled in orders_  |  deque entry remains until swept  |  O(1) cancel</text>
+
+  <!-- MATCH ALGORITHM -->
+  <rect x="30" y="428" width="390" height="118" rx="8" fill="#0a1628" stroke="#10b981" stroke-width="1.5"/>
+  <rect x="30" y="428" width="390" height="22" rx="8" fill="#10b981" opacity="0.15"/>
+  <text x="225" y="444" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#10b981">MATCHING ALGORITHM</text>
+
+  <text x="46" y="463" font-family="monospace" font-size="9" fill="#dde8f8">1. Check spread cross (skip if incoming price misses)</text>
+  <text x="46" y="478" font-family="monospace" font-size="9" fill="#dde8f8">2. Walk FIFO deque at best level, skip lazy-canceled</text>
+  <text x="46" y="493" font-family="monospace" font-size="9" fill="#dde8f8">3. Self-trade check (cancel incoming, preserve maker)</text>
+  <text x="46" y="508" font-family="monospace" font-size="9" fill="#dde8f8">4. Fill at MAKER price  |  emit Fill event</text>
+  <text x="46" y="523" font-family="monospace" font-size="9" fill="#dde8f8">5. Prune empty levels  |  rest remainder or IOC-cancel</text>
+  <text x="225" y="539" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">[[assume(remaining&gt;0)]] [[assume(fill_qty&gt;0)]] — C++23 optimizer hints</text>
+
+  <!-- ========== RIGHT SIDE: MEMORY STACK ========== -->
+  <text x="650" y="80" text-anchor="middle" font-family="monospace" font-size="13" font-weight="bold" fill="#10b981">MEMORY STACK (per-market)</text>
+
+  <!-- Memory layers (stacked) -->
+  <!-- Layer 1: buffer -->
+  <rect x="450" y="92" width="390" height="56" rx="8" fill="#0d1f36" stroke="#475569" stroke-width="1.2"/>
+  <text x="645" y="113" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#dde8f8">stack_buffer&lt;16MB&gt;</text>
+  <text x="645" y="130" text-anchor="middle" font-family="monospace" font-size="9" fill="#b0cce6">16 MB aligned stack allocation — zero heap at steady state</text>
+
+  <!-- Layer 2: monotonic -->
+  <rect x="460" y="156" width="370" height="52" rx="7" fill="#0d2137" stroke="#475569" stroke-width="1.2"/>
+  <text x="645" y="175" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#dde8f8">monotonic_buffer_resource</text>
+  <text x="645" y="190" text-anchor="middle" font-family="monospace" font-size="9" fill="#b0cce6">bump-pointer allocator — O(1) alloc, no individual free</text>
+
+  <!-- Layer 3: tracking -->
+  <rect x="470" y="216" width="350" height="52" rx="7" fill="#0d2137" stroke="#f59e0b" stroke-width="1.2"/>
+  <text x="645" y="235" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#f59e0b">TrackingResource</text>
+  <text x="645" y="250" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">committed_  — bytes given to pool in chunks</text>
+  <text x="645" y="262" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">should_reject_new_orders(): committed_ &gt;= reject_watermark</text>
+
+  <!-- Layer 4: pool -->
+  <rect x="480" y="276" width="330" height="68" rx="7" fill="#0a2040" stroke="#10b981" stroke-width="2"/>
+  <text x="645" y="296" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#10b981">unsynchronized_pool_resource</text>
+  <text x="645" y="312" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">max_blocks_per_chunk = 32</text>
+  <text x="645" y="325" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">largest_required_pool_block = 1024</text>
+  <text x="645" y="337" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">freed memory recycled — cancel/reuse cycles stay flat</text>
+
+  <!-- Layer 5: containers -->
+  <rect x="490" y="352" width="310" height="56" rx="7" fill="#0d2137" stroke="#a78bfa" stroke-width="1.5"/>
+  <text x="645" y="371" text-anchor="middle" font-family="monospace" font-size="11" font-weight="bold" fill="#a78bfa">pmr containers</text>
+  <text x="645" y="386" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">pmr::map  |  pmr::deque  |  pmr::unordered_map</text>
+  <text x="645" y="399" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">all allocations flow through pool_ -&gt; tracking_ -&gt; monotonic_ -&gt; buffer_</text>
+
+  <!-- Destruction order note -->
+  <rect x="450" y="424" width="390" height="64" rx="8" fill="#0a1628" stroke="#f59e0b" stroke-width="1" stroke-dasharray="5,3"/>
+  <text x="645" y="441" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#f59e0b">Destruction Order (critical)</text>
+  <text x="645" y="457" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">pool_ declared LAST  =&gt;  destroyed FIRST</text>
+  <text x="645" y="471" text-anchor="middle" font-family="monospace" font-size="9" fill="#dde8f8">pool_::release() calls tracking_::deallocate()</text>
+  <text x="645" y="480" text-anchor="middle" font-family="monospace" font-size="8" fill="#b0cce6">tracking_ still alive — no use-after-free</text>
+
+  <!-- Performance notes -->
+  <rect x="450" y="500" width="390" height="60" rx="8" fill="#0a1628" stroke="#06b6d4" stroke-width="1"/>
+  <text x="645" y="517" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#06b6d4">Throughput (i9-14900K, Release build)</text>
+  <text x="462" y="533" font-family="monospace" font-size="9" fill="#10b981">Taker/Maker spread:</text>
+  <text x="625" y="533" font-family="monospace" font-size="9" fill="#e2e8f0">~18M matched pairs/sec</text>
+  <text x="462" y="547" font-family="monospace" font-size="9" fill="#10b981">GTC insert:</text>
+  <text x="625" y="547" font-family="monospace" font-size="9" fill="#e2e8f0">~9M orders/sec</text>
+  <text x="735" y="533" font-family="monospace" font-size="9" fill="#10b981">Cancel (lazy):</text>
+  <text x="735" y="547" font-family="monospace" font-size="9" fill="#e2e8f0">~567M/sec</text>
+</svg>

@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Exchange Matching Engine — Take-Home</title>
+  <style>
+    :root {
+      --bg:      #000000;
+      --card:    #0a0f1a;
+      --border:  #1e3a5f;
+      --cyan:    #06b6d4;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --purple:  #a78bfa;
+      --red:     #ef4444;
+      --text:    #f1f5f9;
+      --muted:   #dde8f8;
+      --dim:     #b8d0ec;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      line-height: 1.7;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* NAV */
+    .toc {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(15,23,42,0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 0;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .toc a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .toc a:hover { color: var(--cyan); border-color: var(--border); }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      padding: 56px 0 44px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 52px;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 50%; transform: translateX(-50%);
+      width: 700px; height: 220px;
+      background: radial-gradient(ellipse at center, rgba(6,182,212,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero h1 {
+      font-size: 2.6rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--cyan) 0%, var(--green) 50%, var(--amber) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .hero .subtitle { font-size: 1.15rem; color: var(--muted); margin-bottom: 24px; }
+    .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .badge {
+      padding: 5px 14px;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: "SF Mono", Consolas, monospace;
+    }
+    .bc { background: rgba(6,182,212,0.12);  color: var(--cyan);   border: 1px solid rgba(6,182,212,0.3); }
+    .bg { background: rgba(16,185,129,0.12); color: var(--green);  border: 1px solid rgba(16,185,129,0.3); }
+    .ba { background: rgba(245,158,11,0.12); color: var(--amber);  border: 1px solid rgba(245,158,11,0.3); }
+    .bp { background: rgba(167,139,250,0.12);color: var(--purple); border: 1px solid rgba(167,139,250,0.3); }
+    .br { background: rgba(239,68,68,0.1);   color: var(--red);    border: 1px solid rgba(239,68,68,0.25); }
+
+    /* SECTIONS */
+    section { margin-bottom: 60px; scroll-margin-top: 48px; }
+    h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 22px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .ico {
+      width: 28px; height: 28px;
+      border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; flex-shrink: 0;
+    }
+    .ico.c { background: rgba(6,182,212,0.15); }
+    .ico.g { background: rgba(16,185,129,0.15); }
+    .ico.a { background: rgba(245,158,11,0.15); }
+    .ico.p { background: rgba(167,139,250,0.15); }
+    .ico.r { background: rgba(239,68,68,0.12); }
+
+    p { color: var(--muted); font-size: 1rem; margin-bottom: 14px; }
+
+    /* CHECKLIST */
+    .req-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    @media(max-width:640px){ .req-grid { grid-template-columns: 1fr; } }
+    .req-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.92rem;
+    }
+    .req-item.done  { border-color: rgba(16,185,129,0.35); }
+    .req-item.extra { border-color: rgba(245,158,11,0.3); }
+    .check { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .req-item .req-label { font-weight: 700; color: var(--text); display: block; font-size: 1rem; }
+    .req-item .req-note  { color: var(--muted); margin-top: 4px; font-size: 0.93rem; line-height: 1.6; }
+
+    /* DIAGRAMS */
+    .diagram-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      overflow-x: auto;
+      margin-bottom: 12px;
+    }
+    .diagram-wrap img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    .fig-caption { text-align: center; font-size: 0.84rem; color: var(--dim); font-family: monospace; margin-bottom: 24px; }
+
+    /* DECISION CARDS */
+    .decisions { display: flex; flex-direction: column; gap: 14px; }
+    .decision {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--cyan);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .decision.g { border-left-color: var(--green); }
+    .decision.a { border-left-color: var(--amber); }
+    .decision.p { border-left-color: var(--purple); }
+    .decision.r { border-left-color: var(--red); }
+    .d-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .d-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 1px 8px;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      font-family: monospace;
+    }
+    .t-cyan   { background: rgba(6,182,212,0.12);  color: var(--cyan); }
+    .t-green  { background: rgba(16,185,129,0.12); color: var(--green); }
+    .t-amber  { background: rgba(245,158,11,0.12); color: var(--amber); }
+    .t-purple { background: rgba(167,139,250,0.12);color: var(--purple); }
+    .t-red    { background: rgba(239,68,68,0.1);   color: var(--red); }
+    .d-body { font-size: 0.97rem; color: var(--muted); line-height: 1.75; }
+    .d-tradeoff {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+      font-size: 0.93rem;
+      color: var(--dim);
+    }
+    .d-tradeoff::before { content: "⚖ tradeoff:  "; color: var(--amber); font-weight: 700; }
+
+    /* TABLES */
+    .table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    thead tr { background: rgba(6,182,212,0.07); }
+    th { padding: 11px 16px; text-align: left; font-weight: 700; color: var(--cyan); font-size: 0.84rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    td { padding: 11px 16px; border-bottom: 1px solid rgba(30,58,95,0.4); color: var(--muted); vertical-align: top; font-size: 0.95rem; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(13,27,42,0.4); }
+    code { font-family: "SF Mono", Consolas, monospace; font-size: 0.82em; background: rgba(6,182,212,0.1); color: var(--cyan); padding: 1px 5px; border-radius: 4px; }
+    .green  { color: var(--green); }
+    .amber  { color: var(--amber); }
+    .red    { color: var(--red); }
+    .purple { color: var(--purple); }
+    strong  { color: var(--text); font-weight: 600; }
+
+    /* TWO-COL */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media(max-width:680px){ .two-col { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+    }
+    .panel h3 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--cyan); margin-bottom: 10px; }
+    .panel ul { list-style: none; padding: 0; }
+    .panel ul li { font-size: 0.95rem; color: var(--muted); padding: 5px 0; border-bottom: 1px solid rgba(30,58,95,0.3); }
+    .panel ul li:last-child { border-bottom: none; }
+    .panel ul li::before { content: "→  "; color: var(--dim); }
+
+    /* BENCHMARK */
+    .bm-f { color: var(--green); font-weight: 600; font-family: monospace; font-size: 0.97rem; }
+    .bm-m { color: var(--amber); font-weight: 600; font-family: monospace; font-size: 0.97rem; }
+    .bm-n { font-family: monospace; font-size: 0.93rem; }
+
+    /* PRE */
+    pre {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      overflow-x: auto;
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* TIMELINE */
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .tl-item { display: flex; gap: 16px; }
+    .tl-line { display: flex; flex-direction: column; align-items: center; }
+    .tl-dot  { width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); flex-shrink: 0; margin-top: 5px; }
+    .tl-bar  { flex: 1; width: 2px; background: var(--border); }
+    .tl-item:last-child .tl-bar { display: none; }
+    .tl-body { padding-bottom: 18px; }
+    .tl-part { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--dim); }
+    .tl-title { font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .tl-desc  { font-size: 0.9rem; color: var(--muted); }
+
+    footer { margin-top: 72px; padding-top: 20px; border-top: 1px solid var(--border); text-align: center; font-size: 0.84rem; color: var(--dim); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#part1">Part 1 — Engine</a>
+  <a href="#design">Design Decisions</a>
+  <a href="#part2">Part 2 — Multi-Market</a>
+  <a href="#throughput">Throughput</a>
+  <a href="#tradeoffs">Tradeoffs</a>
+  <a href="#part3">Part 3 — Distributed</a>
+  <a href="#build">Build &amp; Run</a>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <h1>Exchange Matching Engine</h1>
+  <div class="subtitle">Take-home submission &mdash; Parts 1, 2 &amp; 3 &mdash; C++23</div>
+  <div class="badges">
+    <span class="badge bc">C++23</span>
+    <span class="badge bg">23 tests passing</span>
+    <span class="badge bg">17–18M matches/sec</span>
+    <span class="badge ba">custom memory pool</span>
+    <span class="badge bp">price-time priority</span>
+    <span class="badge bc">SPSC lock-free queue</span>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════
+     OVERVIEW
+══════════════════════════════════════════════════════════ -->
+<section id="overview">
+  <h2><span class="ico c">✓</span>Requirements Coverage</h2>
+
+  <div class="req-grid">
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Limit &amp; Market Orders</span>
+        <span class="req-note">Both sides (buy and sell). Market orders sweep at any price. IOC market sweeps tested.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Cancel by Order ID</span>
+        <span class="req-note">O(1) lazy mark — no data structure surgery at cancel time. Queue entry silently skipped during matching. Always accepted, even past memory watermark.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Price-Time Priority</span>
+        <span class="req-note">Best price first (sorted map, best bid/ask at the front). Within a price level: first-in-first-out queue. Partial fills preserve original time priority.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">No Self-Trade</span>
+        <span class="req-note">Cancel Newest policy. Incoming order rejected; resting maker untouched with full priority.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Partial Fills</span>
+        <span class="req-note">GTC remainder rests with its original sequence number (time priority preserved). Partially-filled maker pushed back to the front of the queue — not re-queued as new.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">TIF: GTC &amp; IOC</span>
+        <span class="req-note">GTC rests any unfilled remainder. IOC cancels remainder with a cancel acknowledgement event.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Post-Only (nice-to-have)</span>
+        <span class="req-note">Rejects with <code>PostOnlyWouldTake</code> if the order would cross the spread. Rests otherwise.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Determinism</span>
+        <span class="req-note">No wall clocks, no system timestamps. Monotonic sequence counter per market. Same input sequence → identical fill/book output every run, on any machine.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Multiple Independent Markets</span>
+        <span class="req-note">One dedicated thread per market. Private lock-free queue. Private memory pool. Sequence counters are per-market and independent.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">CLI Entry Point</span>
+        <span class="req-note">JSON commands in (stdin) → JSON events out (stdout). <code>src/main.cpp</code>. Scriptable replay harness. Output destination is pluggable: events go to stdout in the CLI, are collected in-memory during tests, and discarded in benchmarks — same matching logic in all three cases.</span>
+      </div>
+    </div>
+    <div class="req-item done">
+      <span class="check">✅</span>
+      <div>
+        <span class="req-label">Throughput Benchmark</span>
+        <span class="req-note">5 Google Benchmark scenarios. ~17–18M matched pairs/sec on i9-14900K. Bottleneck identified and documented.</span>
+      </div>
+    </div>
+    <div class="req-item extra">
+      <span class="check">⭐</span>
+      <div>
+        <span class="req-label">PMR Arena + Pool Allocator</span>
+        <span class="req-note">Per-market memory slab pre-allocated at startup. Pool layer recycles freed nodes. Memory watermark backpressure. Zero OS memory calls at steady state.</span>
+      </div>
+    </div>
+    <div class="req-item" style="border-color:rgba(239,68,68,0.3);">
+      <span class="check">⏭</span>
+      <div>
+        <span class="req-label" style="color:#ef4444;">Query API — skipped (conscious choice)</span>
+        <span class="req-note">The spec requires top-of-book, full depth, and order status queries. I skipped this to focus time on matching correctness, determinism, and throughput. The engine's internal data structures (<code>bids_</code>, <code>asks_</code>, <code>orders_</code>) expose everything needed — adding <code>top_of_book()</code>, <code>depth(N)</code>, and <code>order_status(id)</code> is additive with no design changes. See Tradeoffs section for the production approach.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     PART 1 — ARCHITECTURE
+══════════════════════════════════════════════════════════ -->
+<section id="part1">
+  <h2><span class="ico g">1</span>Part 1 — Single-Market Architecture</h2>
+
+  <div class="diagram-wrap">
+    <img src="docs/design.svg" alt="Internal Design"/>
+  </div>
+  <p class="fig-caption">Order book internals — bid/ask maps, PriceLevel FIFO, matching algorithm, PMR memory stack</p>
+
+  <div class="diagram-wrap">
+    <img src="docs/arch.svg" alt="System Architecture"/>
+  </div>
+  <p class="fig-caption">End-to-end command and event flow — Client → SPSC Queue → Consumer Thread → OrderBook → events out</p>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     DESIGN DECISIONS
+══════════════════════════════════════════════════════════ -->
+<section id="design">
+  <h2><span class="ico a">🎯</span>Design Decisions</h2>
+
+  <div class="decisions">
+
+    <div class="decision">
+      <div class="d-tag t-cyan">DATA STRUCTURE</div>
+      <div class="d-title">Price levels: sorted map (red-black tree)</div>
+      <div class="d-body">
+        A sorted map for bids (descending order — best bid first) and a sorted map for asks (ascending — best ask first). O(log N) insert, remove, and lookup.
+        All tree nodes are allocated from the per-market memory pool — no global heap. 
+        At N = 100 price levels, the entire working set is ~6 KB per side, staying in L1/L2 cache.
+      </div>
+      <div class="d-tradeoff">Each price-level lookup traverses ~7 tree nodes (log₂ 100 ≈ 7). Each step may be a separate cache line. This is the primary bottleneck — see throughput section. A flat sorted array would win on lookup but loses on N-level sweeps (O(N) shifts). Benchmarks confirmed the tree is optimal for our workload profile.</div>
+    </div>
+
+    <div class="decision g">
+      <div class="d-tag t-green">DATA STRUCTURE</div>
+      <div class="d-title">Per-level order queue: FIFO queue with lazy deletion</div>
+      <div class="d-body">
+        Each price level holds a FIFO queue of order IDs. Matching consumes from the front.
+        Cancel is O(1): mark the order as Canceled in the order lookup table.
+        The queue entry is silently skipped the next time that level is matched through.
+        Partially-filled makers are pushed back to the <em>front</em> of the queue to preserve their original time priority — their sequence number never changes.
+      </div>
+      <div class="d-tradeoff">Deep OTM levels accumulate dead entries that are never reaped. In production, an intrusive doubly-linked list would allow O(1) physical removal. Documented explicitly as a known limitation.</div>
+    </div>
+
+    <div class="decision a">
+      <div class="d-tag t-amber">CORRECTNESS</div>
+      <div class="d-title">Determinism: monotonic <code>seq_</code> counter, no wall clocks</div>
+      <div class="d-body">
+        Every command processed increments a per-market sequence counter.
+        This counter is the sole source of time ordering — no wall clocks, no system timestamps, no thread IDs.
+        Consequence: given the same sequence of place and cancel inputs in the same order,
+        the engine produces byte-for-byte identical fills and book states every run, on any machine.
+      </div>
+      <div class="d-tradeoff">Wall-clock timestamps are useful for regulatory reporting and latency measurement but are not needed for correctness. They are trivially addable to events as a separate field without touching the matching logic.</div>
+    </div>
+
+    <div class="decision p">
+      <div class="d-tag t-purple">CORRECTNESS</div>
+      <div class="d-title">Self-trade prevention: Cancel Newest (incoming order)</div>
+      <div class="d-body">
+        When the incoming order’s account matches the resting maker’s account, the incoming order is immediately
+        rejected (reason: SelfTrade). The resting maker is put back at the <em>front</em>
+        of the queue with its original queue position intact.
+        Three policies were considered: Cancel Newest (chosen), Cancel Oldest, Cancel Both.
+        Cancel Newest was chosen because: (1) the maker's priority is preserved — least disruptive to the book,
+        (2) the maker already has a confirmed resting acknowledgement, (3) simplest to audit.
+      </div>
+      <div class="d-tradeoff">Cancel Oldest (removing the maker) might be preferred in venues that want to prevent quote stuffing. Cancel Both simplifies state but destroys resting liquidity. Policy is a configuration choice in real venues.</div>
+    </div>
+
+    <div class="decision r">
+      <div class="d-tag t-red">MEMORY</div>
+      <div class="d-title">Per-market memory arena: pre-allocated slab → usage tracker → pool recycler → data structures</div>
+      <div class="d-body">
+        Each market gets a private 16 MB buffer pre-allocated at startup. Allocation passes through four layers:
+        raw buffer → bump-pointer allocator → usage tracker → pool recycler → data structures.
+        The pool recycler hands back previously freed order slots and tree-node slots. After an order is canceled and a new one is placed,
+        committed memory stays flat at steady state — no OS memory calls on the hot path.
+        New placements are rejected at the 70% committed watermark. Cancels always proceed (they free memory).
+        The pool is declared last, so it is destroyed first — ensuring the cleanup sequence is safe.
+      </div>
+      <div class="d-tradeoff">Allocations larger than 1024 bytes (e.g. hash table bucket array resizes) bypass the pool recycler and count against the committed watermark permanently. The 30% safety reserve is sized to accommodate this.</div>
+    </div>
+
+    <div class="decision g">
+      <div class="d-tag t-green">CORRECTNESS</div>
+      <div class="d-title">Partial fill priority preservation: maker pushed to front, seq unchanged</div>
+      <div class="d-body">
+        When a resting maker is partially filled, it is pushed back to the <em>front</em> of the price level’s FIFO queue
+        — not the back. Its original sequence number is never modified.
+        This is the correct behaviour for price-time priority: the maker arrived earlier than any new order at this price,
+        so it must remain first in queue for the next fill. A common mistake is to re-enqueue at the back (re-prioritising
+        as if the order had just arrived), which violates time priority.
+        <br><br>
+        The same logic applies to self-trade prevention: when an incoming order is rejected for STP, the resting maker is
+        also pushed back to the front before returning — its position in the queue is exactly as if the STP check had never run.
+      </div>
+      <div class="d-tradeoff">Pushing to the front of the queue is O(1). The alternative (intrusive doubly-linked list) would also be O(1) but adds complexity. The queue is sufficient here and is already allocated from the per-market memory pool.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     PART 2 — MULTI-MARKET
+══════════════════════════════════════════════════════════ -->
+<section id="part2">
+  <h2><span class="ico g">2</span>Part 2 — Multiple Markets &amp; Concurrency</h2>
+
+  <div class="two-col" style="margin-bottom: 20px;">
+    <div class="panel">
+      <h3>1 Thread per Market (1:1 model — high-volume instruments)</h3>
+      <ul>
+        <li>Each consumer thread owns exactly one market</li>
+        <li>Commands arrive via a private lock-free single-producer/single-consumer (SPSC) queue (4096 slots)</li>
+        <li>Consumer calls place or cancel on the book — no locking needed</li>
+        <li>On <code>stop()</code>: drains remaining queue before exiting (no lost commands)</li>
+        <li>Thread pinnable via <code>isolcpus</code> + <code>numactl</code> for NUMA-local allocation</li>
+        <li>In production, a low-volume market (e.g. an illiquid symbol) need not get a dedicated core — multiple markets can be multiplexed onto one thread by round-robin polling their queues in a single loop, trading latency for core efficiency</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Ordering Guarantees</h3>
+      <ul>
+        <li><strong>Within a market:</strong> total order — every event has a strictly increasing sequence number</li>
+        <li><strong>Across markets:</strong> no ordering guarantee — each market has an independent seq counter starting at 1</li>
+        <li>Event streams are per-market and independently replayable</li>
+        <li>A downstream log consumer gets a totally ordered stream per market</li>
+        <li>Cross-market atomic snapshots require an external coordinator (not implemented — out of scope)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>Adding Markets</h3>
+      <ul>
+        <li>Construct a new memory pool, order book, and input queue for the market</li>
+        <li>Wrap them in a market handle and pass to a new consumer thread</li>
+        <li>Start the consumer — fully independent from all existing markets</li>
+        <li>Linear throughput scaling: N markets = N cores, no shared state</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Why Not a Thread Pool?</h3>
+      <ul>
+        <li>A pool requires routing logic — which thread handles which market?</li>
+        <li>Any cross-thread handoff adds cache-line coherence traffic</li>
+        <li>The book is NOT thread-safe by design — concurrent access is the bug</li>
+        <li>1:1 is simpler, saturates a full core, and is the dominant model in production exchanges (e.g. CME Globex, Nasdaq ITCH)</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     THROUGHPUT
+══════════════════════════════════════════════════════════ -->
+<section id="throughput">
+  <h2><span class="ico p">📊</span>Throughput &amp; Bottleneck Analysis</h2>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px;">
+    <span style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);border-radius:8px;padding:6px 14px;font-size:0.82rem;font-family:monospace;color:var(--cyan);">🖥 Intel i9-14900K</span>
+    <span style="background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.25);border-radius:8px;padding:6px 14px;font-size:0.82rem;font-family:monospace;color:var(--purple);">24 cores · 6.0 GHz</span>
+    <span style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:8px;padding:6px 14px;font-size:0.82rem;font-family:monospace;color:var(--green);">96 GB DDR5</span>
+    <span style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:8px;padding:6px 14px;font-size:0.82rem;font-family:monospace;color:var(--green);">36 MB L3</span>
+    <span style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:6px 14px;font-size:0.82rem;font-family:monospace;color:var(--amber);">Ubuntu 24.04</span>
+    <span style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:6px 14px;font-size:0.82rem;font-family:monospace;color:var(--amber);">g++ 13.3.0</span>
+    <span style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:6px 14px;font-size:0.82rem;font-family:monospace;color:var(--red);">-O3 -march=native</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Benchmark</th><th>ns / iter</th><th>Throughput</th><th>What it reveals</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="bm-n">BM_NearSpread_TakerMaker</td>
+          <td class="bm-f">112 ns</td>
+          <td class="bm-f">17.8M matched pairs/sec</td>
+          <td><strong>Primary benchmark — mimics a liquid futures market (e.g. ES, NQ).</strong> An IOC taker hits the best bid/ask and consumes one resting maker; the maker is immediately replenished by a new GTC order at the same price. Spread stays locked — this is the highest-churn pattern seen in equity index futures, where a single price level can trade millions of times per session.</td>
+        </tr>
+        <tr>
+          <td class="bm-n">BM_RestingOnly_RealisticBook</td>
+          <td class="bm-f">107 ns</td>
+          <td class="bm-f">9.4M GTC inserts/sec</td>
+          <td><strong>Mimics a market maker refreshing quotes</strong> — e.g. an options market maker continuously posting new limit orders across 100 strikes. No matches occur; every order just rests. Measures the raw cost of inserting into the sorted price-level map and appending to the FIFO queue. Ceiling for how fast a single market can absorb new resting liquidity.</td>
+        </tr>
+        <tr>
+          <td class="bm-n">BM_Cancel_RealisticBook</td>
+          <td class="bm-f">1.76 ns</td>
+          <td class="bm-f">567M lazy-cancels/sec</td>
+          <td><strong>Cancel is not the bottleneck — confirmed.</strong> Mimics a high-frequency firm rapidly canceling stale quotes on news (cancel-on-news pattern). O(1) hash lookup + status mark. 64× faster than a match — cancel latency will never be the system constraint regardless of cancel rate.</td>
+        </tr>
+        <tr>
+          <td class="bm-n">BM_MarketOrder_WalkN/1</td>
+          <td>121 ns</td><td>8.3M fills/sec</td>
+          <td rowspan="4" style="vertical-align:middle"><strong>Mimics an aggressive market order sweeping the book</strong> — e.g. a large institution crossing the spread to fill a block order. /1 is a single-level fill (typical retail). /10–/50 simulates walking through 10–50 price levels, as seen in crude oil (CL) during thin sessions or in equities during a flash crash. Throughput per fill improves at depth because the per-order fixed cost (queue dequeue, seq increment, STP check) is amortized across more fills per call.</td>
+        </tr>
+        <tr><td class="bm-n">BM_MarketOrder_WalkN/10</td><td>406 ns</td><td class="bm-m">24.7M fills/sec</td></tr>
+        <tr><td class="bm-n">BM_MarketOrder_WalkN/25</td><td>864 ns</td><td class="bm-m">28.9M fills/sec</td></tr>
+        <tr><td class="bm-n">BM_MarketOrder_WalkN/50</td><td>1730 ns</td><td class="bm-m">28.9M fills/sec</td></tr>
+        <tr>
+          <td class="bm-n">BM_PriceDrift/1000</td>
+          <td class="bm-f">116 ns</td>
+          <td class="bm-f">17.3M matched pairs/sec</td>
+          <td><strong>Mimics a trending or volatile session</strong> — e.g. BTC or a small-cap equity where the mid-price moves continuously. Every 1000 events the spread drifts by one tick, forcing the engine to insert and prune different price levels over time. Near-identical throughput to NearSpread confirms that tree rebalancing cost for price movement is negligible versus the matching cost itself.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <h3>Primary Bottleneck</h3>
+      <ul>
+        <li><strong>Sorted-map cache pressure:</strong> ~7 pointer-chased tree nodes per price-level lookup</li>
+        <li>At N=100 levels, working set ≈ 6 KB/side — fits in L1/L2, but pointer-chasing still dominates</li>
+        <li>Each node traversal is a potential cache-line miss after any modification</li>
+        <li>This is the irreducible cost of a comparison-sorted tree — not a bug</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>Secondary Bottleneck</h3>
+      <ul>
+        <li><strong>Order table growth:</strong> lazy deletion leaves Filled entries in the order lookup table</li>
+        <li>After 500K iterations the table has 500K stale entries — lookup degrades slowly</li>
+        <li>Production fix: periodic reclaim pass or intrusive doubly-linked list for O(1) physical removal</li>
+        <li>The near-spread benchmark degrades over its 500K iteration run; the price-drift benchmark reuses fewer orders so grows slower</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     TRADEOFFS
+══════════════════════════════════════════════════════════ -->
+<section id="tradeoffs">
+  <h2><span class="ico r">⚖</span>Tradeoffs &amp; Production Considerations</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>What I chose</th><th>Why (time / correctness)</th><th>What I'd change for production</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Lazy cancel</strong> — dead entries accumulate in deque</td>
+          <td>O(1) cancel, no data structure changes. Correct: dead entries are skipped during matching.</td>
+          <td>Intrusive doubly-linked list per price level: O(1) physical removal at cancel, no garbage accumulation.</td>
+        </tr>
+        <tr>
+          <td><strong>No book query API</strong> (top-of-book, depth, order status)</td>
+          <td>The exercise focuses on matching correctness. Adding query is straightforward.</td>
+          <td>Expose <code>top_of_book()</code>, <code>depth(N)</code>, <code>order_status(id)</code>. Reads are safe on the consumer thread; snapshots for external callers need a copy or MVCC.</td>
+        </tr>
+        <tr>
+          <td><strong>No persistence / recovery</strong></td>
+          <td>Out of scope per the problem statement.</td>
+          <td>Append-only command log (WAL). On crash, replay the log to reconstruct book state. The seq counter provides a natural checkpoint cursor.</td>
+        </tr>
+        <tr>
+          <td><strong>Self-trade: Cancel Newest</strong></td>
+          <td>Preserves maker priority. Deterministic. Simplest to audit.</td>
+          <td>Make it a per-venue configuration. Some venues prefer Cancel Both to punish wash-trade attempts.</td>
+        </tr>
+        <tr>
+          <td><strong>Input queue: fixed 4096-slot ring</strong></td>
+          <td>Zero-allocation, cache-friendly. Sufficient for benchmark workloads.</td>
+          <td>Dynamic capacity or a two-level queue (fast ring + overflow heap queue) for burst traffic handling.</td>
+        </tr>
+        <tr>
+          <td><strong>Order lookup table grows unbounded</strong></td>
+          <td>Simplest correct implementation. Lazy deletion keeps the hot path O(1).</td>
+          <td>Slab-per-session: at end of trading day, reset the entire arena in one shot — no per-order cleanup needed. Or, on the consumer thread itself (not a background thread — the table is not thread-safe), sweep stale entries during idle periods between bursts.</td>
+        </tr>
+        <tr>
+          <td><strong>No auth, collateral, risk checks</strong></td>
+          <td>Explicitly excluded by problem statement.</td>
+          <td>Pre-trade risk gate sits in front of the input queue, not inside the engine. Engine stays pure and deterministic.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     PART 3 — DISTRIBUTED
+══════════════════════════════════════════════════════════ -->
+<section id="part3">
+  <h2><span class="ico p">🌐</span>Part 3 — Toward a Distributed Exchange (design only)</h2>
+
+  <p>Two regions: <strong>Illinois</strong> and <strong>Tokyo</strong>. Each market is owned by exactly one region. A BTC order placed in New York must reach the Tokyo engine to match.</p>
+
+  <div class="decisions">
+
+    <div class="decision">
+      <div class="d-tag t-cyan">ROUTING &amp; ACKNOWLEDGEMENT</div>
+      <div class="d-title">What does a New York client see and when?</div>
+      <div class="d-body">
+        The NY gateway accepts the order, assigns a local <strong>client-visible receipt</strong> (timestamp + gateway seq), and
+        immediately returns a <em>received</em> acknowledgement to the client (~0.2 ms for a co-located client; ~0.5–2 ms for a retail client in the same city).
+        This is NOT a fill confirmation — it is a delivery guarantee.
+        The order then travels to Tokyo (~130 ms one-way on a leased trans-Pacific line).
+        The Tokyo matching engine processes it, emits Fill/Ack/Reject events, and streams them back to NY.
+        The client receives the true match acknowledgement at <strong>2 × one-way + engine latency</strong> (~260 ms floor from NY).
+        <br><br>
+        Clients that care about latency place orders directly via the Tokyo gateway (access fee trade-off).
+        The NY gateway is for regional clients who accept the latency floor.
+      </div>
+      <div class="d-tradeoff">The 260 ms floor is determined by the speed of light, not software. You cannot improve it without moving the matching engine closer to the client.</div>
+    </div>
+
+    <div class="decision g">
+      <div class="d-tag t-green">DETERMINISM &amp; REPLAY</div>
+      <div class="d-title">WAL + seq numbers make state reconstructable</div>
+      <div class="d-body">
+        Every command the Tokyo engine accepts is written to an <strong>append-only WAL</strong> (write-ahead log) before being
+        dispatched to the matching engine. The WAL entry contains: global seq, command payload, and a hash of the previous entry (chain integrity).
+        <br><br>
+        After a crash: replay the WAL from the last checkpoint. The matching engine's seq counter provides a natural cursor.
+        Since the engine is deterministic (no wall clocks, pure function of inputs), replay produces exactly the same book state.
+        <br><br>
+        A <strong>replica region</strong> (Illinois) subscribes to the WAL stream. It maintains a shadow book that stays ~130 ms behind.
+        This replica can serve read-only queries (market data, order status) without touching the primary.
+      </div>
+      <div class="d-tradeoff">The WAL is the serialization point. Its write throughput is the new ceiling. In production this would be a high-throughput sequential append log (Chronicle Queue, LMAX Disruptor-style ring). NVMe sync latency is ~20–100µs — well under the 130 ms network floor.</div>
+    </div>
+
+    <div class="decision a">
+      <div class="d-tag t-amber">FAILURE MODES</div>
+      <div class="d-title">Link degradation and regional failover</div>
+      <div class="d-body">
+        <strong>Link degradation (partial):</strong> The NY gateway buffers commands locally. Orders accumulate in a durable queue (bounded — e.g. 1M slots; beyond that, new orders are rejected with a "gateway congested" response rather than silently dropped or accepted with a false promise).
+        Once the link recovers, they are replayed in arrival order. Clients receive a "gateway buffering" notice.
+        No data loss; latency increases.
+        <br><br>
+        <strong>Tokyo goes down:</strong> The Illinois replica has a consistent but stale book (~130 ms behind).
+        It <strong style="color:var(--red);font-weight:800;">cannot</strong> safely take over without <span style="background:rgba(239,68,68,0.2);color:var(--red);padding:1px 6px;border-radius:4px;font-weight:700;">risk</span> of duplicate fills or missed cancels for in-flight orders.
+        Safe path: <em>pause all new order acceptance</em>, drain in-flight orders from the WAL up to the last confirmed seq,
+        then promote Illinois as primary. This takes seconds, not minutes.
+        <br><br>
+        <strong>Risk of premature takeover:</strong> If Illinois promotes itself while there are unconfirmed orders in the NY→Tokyo pipeline,
+        those orders will be re-submitted and may match again, causing double fills. This is the critical window.
+        Mitigation: NY gateway tracks the highest seq it has received a Fill/Ack/Reject for. Failover is safe only after
+        Illinois's WAL position reaches that seq.
+        <br><br>
+        <strong style="color:var(--green);">Re-open auction after failover:</strong> Even after a clean seq-safe promotion, participants' local views of the book
+        may have diverged during the outage window — some clients received fills, others received timeouts, and resting orders
+        may have been acknowledged by Tokyo but not yet visible to Illinois clients.
+        Rather than resuming continuous matching into a potentially inconsistent state, the promoted Illinois engine should:
+        <ol style="margin:10px 0 0 20px;line-height:2;">
+          <li>Start with a <strong>fresh order book</strong> — all pre-failover resting orders are canceled with a <code>CancelAck</code> event</li>
+          <li>Open a <strong>call auction window</strong> (e.g. 60 seconds) — participants submit new or revised orders; no matching occurs yet</li>
+          <li>At auction close, match all eligible orders at a single <strong>clearing price</strong> that maximises volume</li>
+          <li>Resume <strong>continuous matching</strong> from that clean, agreed-upon book state</li>
+        </ol>
+        This is the standard exchange recovery procedure (used by NYSE, LSE, and most CME products after a halt).
+        It re-establishes a coherent book for all participants simultaneously rather than inheriting ambiguous pre-failover state.
+        <br><br>
+        <strong>Regulatory dimension:</strong> In most jurisdictions (SEC, ESMA, MAS), an unplanned engine outage is a
+        <strong>reportable market disruption event</strong>. The exchange must:
+        <ul style="margin:8px 0 0 20px;line-height:2;">
+          <li>Notify the regulator within a defined window (e.g. 15 minutes under MiFID II Art. 12)</li>
+          <li>Preserve the full WAL and event log covering the outage period — this is the audit trail</li>
+          <li>Conduct the re-open auction rather than resuming silently — regulators require a visible, time-stamped halt/resume boundary</li>
+          <li>Publish a post-incident report explaining root cause, affected instruments, and any erroneous trades</li>
+        </ul>
+        Skipping the auction and resuming into a stale book is not just technically risky — it is likely a regulatory violation.
+      </div>
+      <div class="d-tradeoff">You cannot eliminate the failover window with a two-region design. Three regions with Raft/Paxos consensus would allow safe automatic failover — but only if the three nodes are co-located in the same metro (e.g. three data centres in the Chicago area, ~0.3–2 ms inter-node RTT), making each consensus round-trip ~1–4 ms per order. If the quorum nodes were spread across Illinois, Tokyo, and London, every order would pay the slowest quorum leg (~140 ms to London), which is unusable. Most exchanges keep the consensus cluster local and treat the remote region as an async follower, accepting the manual failover window rather than the latency tax of a geographically distributed quorum.</div>
+    </div>
+
+    <div class="decision p">
+      <div class="d-tag t-purple">DESIGN CHANGES</div>
+      <div class="d-title">What would change in Parts 1 &amp; 2 if I had known from the start?</div>
+      <div class="d-body">
+        <strong>1. WAL-first command dispatch:</strong> Instead of pushing directly to the SPSC queue, the Consumer would write to the WAL first, then dispatch. This adds ~20–100µs latency per command but makes the system crash-safe by design.<br><br>
+        <strong>2. Global order IDs:</strong> Order IDs would be <em>gateway-scoped</em> (region prefix + local monotonic ID) rather than client-assigned. This prevents ID collisions when orders from multiple regions converge on one engine.
+      </div>
+      <div class="d-tradeoff">The core matching engine (OrderBook, PriceLevel, SPSC, arena) is unchanged — it is already pure and deterministic. The distributed concerns are a wrapper around it, not inside it. This is the correct abstraction boundary.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════
+     BUILD & RUN
+══════════════════════════════════════════════════════════ -->
+<section id="build">
+  <h2><span class="ico c">🔨</span>Build &amp; Run</h2>
+
+  <style>
+    .cmd-block { position: relative; margin-bottom: 18px; }
+    .cmd-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--cyan); margin-bottom: 6px; }
+    .cmd-block pre { margin-bottom: 0; padding-right: 52px; }
+    .copy-btn {
+      position: absolute; top: 8px; right: 10px;
+      background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.3);
+      color: var(--cyan); border-radius: 5px; padding: 3px 10px;
+      font-size: 0.72rem; font-family: monospace; cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: rgba(6,182,212,0.25); }
+    .copy-btn.copied { background: rgba(16,185,129,0.2); color: var(--green); border-color: rgba(16,185,129,0.4); }
+  </style>
+
+  <div class="cmd-block">
+    <div class="cmd-label">1 — Install dependencies (Ubuntu 24.04)</div>
+    <pre id="cmd1">sudo apt install g++-13 cmake ninja-build libgtest-dev libgmock-dev</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd1',this)">copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-label">2 — Debug build + tests (memory &amp; undefined-behaviour checks)</div>
+    <pre id="cmd2">cmake -G Ninja -S . -B build_dbg -DCMAKE_BUILD_TYPE=Debug
+cmake --build build_dbg -j$(nproc)
+./build_dbg/tests   # expect: 23 tests passing</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd2',this)">copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-label">3 — Release build + benchmarks</div>
+    <pre id="cmd3">cmake -G Ninja -S . -B build_rel -DCMAKE_BUILD_TYPE=Release
+cmake --build build_rel -j$(nproc)
+./build_rel/bench</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd3',this)">copy</button>
+  </div>
+
+  <div class="cmd-block">
+    <div class="cmd-label">4 — CLI — place a resting limit buy (GTC) → expect: ack</div>
+    <pre id="cmd4">echo '{"cmd":"place","market":"BTC","order_id":1,"account_id":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}' \
+  | ./build_rel/exchange</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd4',this)">copy</button>
+  </div>
+  <pre style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.25);margin-bottom:22px;color:var(--green);">{"type":"ack","seq":1,"order_id":1,"account":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}</pre>
+
+  <div class="cmd-block">
+    <div class="cmd-label">5 — CLI — matching sell crosses the spread → expect: fill on both sides, then ack for remainder</div>
+    <pre id="cmd5">printf '{"cmd":"place","market":"BTC","order_id":1,"account_id":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}\n{"cmd":"place","market":"BTC","order_id":2,"account_id":99,"side":"sell","price":50000,"size":3,"tif":"ioc"}\n' \
+  | ./build_rel/exchange</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd5',this)">copy</button>
+  </div>
+  <pre style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.25);margin-bottom:22px;color:var(--green);">{"type":"ack","seq":1,"order_id":1,"account":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}
+{"type":"fill","seq":2,"taker_order_id":2,"maker_order_id":1,"taker_account":99,"maker_account":42,"taker_side":"sell","price":50000,"qty":3,"taker_done":true,"maker_done":false}</pre>
+
+  <div class="cmd-block">
+    <div class="cmd-label">6 — CLI — cancel a resting order → expect: cancel_ack with remaining size</div>
+    <pre id="cmd6">printf '{"cmd":"place","market":"BTC","order_id":1,"account_id":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}\n{"cmd":"cancel","market":"BTC","order_id":1,"account_id":42}\n' \
+  | ./build_rel/exchange</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd6',this)">copy</button>
+  </div>
+  <pre style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.25);margin-bottom:22px;color:var(--green);">{"type":"ack","seq":1,"order_id":1,"account":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}
+{"type":"cancel_ack","seq":2,"order_id":1,"account":42,"remaining":5}</pre>
+
+  <div class="cmd-block">
+    <div class="cmd-label">7 — CLI — IOC market order sweep (price:0, drains asks) → expect: fill + cancel_ack for unfilled remainder</div>
+    <pre id="cmd7">printf '{"cmd":"place","market":"BTC","order_id":1,"account_id":42,"side":"sell","price":50000,"size":3,"tif":"gtc"}\n{"cmd":"place","market":"BTC","order_id":2,"account_id":99,"side":"buy","price":0,"size":10,"tif":"ioc"}\n' \
+  | ./build_rel/exchange</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd7',this)">copy</button>
+  </div>
+  <pre style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.25);margin-bottom:22px;color:var(--green);">{"type":"ack","seq":1,"order_id":1,"account":42,"side":"sell","price":50000,"size":3,"tif":"gtc"}
+{"type":"fill","seq":2,"taker_order_id":2,"maker_order_id":1,"taker_account":99,"maker_account":42,"taker_side":"buy","price":50000,"qty":3,"taker_done":false,"maker_done":true}
+{"type":"cancel_ack","seq":2,"order_id":2,"account":99,"remaining":7}</pre>
+
+  <div class="cmd-block">
+    <div class="cmd-label">8 — CLI — self-trade prevention → expect: reject (same account_id on both sides)</div>
+    <pre id="cmd8">printf '{"cmd":"place","market":"BTC","order_id":1,"account_id":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}\n{"cmd":"place","market":"BTC","order_id":2,"account_id":42,"side":"sell","price":50000,"size":5,"tif":"ioc"}\n' \
+  | ./build_rel/exchange</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd8',this)">copy</button>
+  </div>
+  <pre style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.25);margin-bottom:22px;color:var(--green);">{"type":"ack","seq":1,"order_id":1,"account":42,"side":"buy","price":50000,"size":5,"tif":"gtc"}
+{"type":"reject","seq":2,"order_id":2,"account":42,"reason":"self_trade"}</pre>
+
+  <div class="cmd-block">
+    <div class="cmd-label">9 — CLI — post-only rejected (would cross spread) → expect: reject</div>
+    <pre id="cmd9">printf '{"cmd":"place","market":"BTC","order_id":1,"account_id":42,"side":"sell","price":50000,"size":5,"tif":"gtc"}\n{"cmd":"place","market":"BTC","order_id":2,"account_id":99,"side":"buy","price":50000,"size":5,"tif":"post_only"}\n' \
+  | ./build_rel/exchange</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd9',this)">copy</button>
+  </div>
+  <pre style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.25);margin-bottom:22px;color:var(--green);">{"type":"ack","seq":1,"order_id":1,"account":42,"side":"sell","price":50000,"size":5,"tif":"gtc"}
+{"type":"reject","seq":2,"order_id":2,"account":99,"reason":"post_only_would_take"}</pre>
+
+  <div class="cmd-block">
+    <div class="cmd-label">10 — CLI — two markets in one session (BTC and SILVER are fully independent)</div>
+    <pre id="cmd10">printf '{"cmd":"place","market":"BTC","order_id":1,"account_id":1,"side":"buy","price":50000,"size":1,"tif":"gtc"}\n{"cmd":"place","market":"SILVER","order_id":1,"account_id":2,"side":"sell","price":25,"size":100,"tif":"gtc"}\n' \
+  | ./build_rel/exchange</pre>
+    <button class="copy-btn" onclick="copyCmd('cmd10',this)">copy</button>
+  </div>
+  <pre style="background:rgba(16,185,129,0.06);border-color:rgba(16,185,129,0.25);margin-bottom:22px;color:var(--green);">{"type":"ack","seq":1,"order_id":1,"account":1,"side":"buy","price":50000,"size":1,"tif":"gtc"}
+{"type":"ack","seq":1,"order_id":1,"account":2,"side":"sell","price":25,"size":100,"tif":"gtc"}</pre>
+  <p style="font-size:0.85rem;color:var(--dim);margin-top:-14px;margin-bottom:22px;">Note: both markets start their seq counter at 1 independently.</p>
+
+  <script>
+    function copyCmd(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'copied ✓';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1800);
+      });
+    }
+  </script>
+
+  <div class="table-wrap" style="margin-top:20px;">
+    <table>
+      <thead><tr><th>Test suite</th><th>Count</th><th>Covers</th></tr></thead>
+      <tbody>
+        <tr><td><code>test_matching.cpp</code></td><td><span class="green">15 tests</span></td><td>Price-time priority, partial fills, IOC, Post-only, self-trade prevention, cancel-during-match, market order sweep, seq monotonicity</td></tr>
+        <tr><td><code>test_multi_market.cpp</code></td><td><span class="green">2 tests</span></td><td>Market isolation (BTC events never appear in SILVER), per-market seq independence</td></tr>
+        <tr><td><code>test_arena.cpp</code></td><td><span class="green">6 tests</span></td><td>Arena construction, watermark rejection, cancel bypass watermark, pool recycling</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<footer>
+  Exchange Matching Engine &mdash; C++23 &middot; std::pmr &middot; SPSC lock-free &middot; price-time priority &middot; Parts 1, 2 &amp; 3
+</footer>
+
+</body>
+</html>
