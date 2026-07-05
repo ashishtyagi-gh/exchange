@@ -2,7 +2,7 @@
 
 C++23 limit order book — price-time priority · STP · IOC/GTC/post-only · PMR arena · lock-free SPSC · 17M+ matched pairs/sec
 
-**→ [View full writeup (README.html)](https://htmlpreview.github.io/?https://github.com/ashishtyagi-gh/exchange/blob/main/README.html)**
+**→ [View full writeup](https://ashishtyagi-gh.github.io/exchange/)**
 
 ---
 
